@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>من هو المعلم؟ لعبة اكتشاف الشخصية بالذكاء الاصطناعي</title>
+<style>
+  :root{
+    --bg:#0f172a; /* slate-900 */
+    --panel:#111827; /* gray-900 */
+    --card:#0b1220; /* deep */
+    --muted:#94a3b8; /* slate-400 */
+    --text:#e5e7eb; /* gray-200 */
+    --green:#22c55e;
+    --red:#ef4444;
+    --yellow:#f59e0b;
+    --blue:#3b82f6;
+    --ring:#334155;
+    --btn:#1f2937;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:radial-gradient(1200px 800px at 50% -200px, #1f2937 0%, var(--bg) 50%, #0b0f1a 100%);
+    color:var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Kufi Arabic", "Noto Sans Arabic", "Noto Naskh Arabic", Arial, sans-serif;
+    line-height:1.6; min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .app{ width:min(900px, 100%); background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)); border:1px solid #1f2937; border-radius:24px; overflow:hidden; box-shadow: 0 30px 80px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.03)}
+  header{ padding:22px 24px; border-bottom:1px solid #1f2937; display:flex; align-items:center; justify-content:space-between; gap:12px; background:rgba(17,24,39,.55); backdrop-filter: blur(8px)}
+  h1{ font-size:clamp(18px, 3vw, 24px); margin:0; display:flex; align-items:center; gap:10px}
+  h1 .emoji{font-size:1.2em}
+  .tag{font-size:12px; color:#cbd5e1; background:#0b1220; border:1px solid #1f2937; padding:6px 10px; border-radius:999px}
+  .container{ padding:28px; display:grid; gap:24px}
+  .card{ background:rgba(2,6,23,.5); border:1px solid #0b1220; border-radius:20px; padding:20px}
+  .progress{ height:10px; background:#0b1220; border-radius:999px; overflow:hidden; border:1px solid #0f172a}
+  .progress > div{ height:100%; background:linear-gradient(90deg, #22c55e, #3b82f6); width:0%; transition:width .35s ease}
+  .q{ font-size:clamp(18px, 2.6vw, 22px); margin:0 0 10px 0}
+  .answers{ display:grid; gap:12px}
+  .btn{
+    display:flex; align-items:center; gap:10px; width:100%; border:1px solid var(--ring); background:linear-gradient(180deg, #0b1220, #0a0f1e); color:var(--text);
+    padding:14px 16px; font-size:16px; border-radius:14px; cursor:pointer; transition: transform .08s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+  .btn:hover{ background:#0f172a; border-color:#1f2937; box-shadow:0 4px 18px rgba(0,0,0,.35)}
+  .btn:active{ transform:translateY(1px) }
+  .swatch{ width:18px; height:18px; border-radius:50%; border:2px solid #0b1220; box-shadow:0 0 0 2px rgba(0,0,0,.25) inset}
+  .swatch.green{ background:var(--green)}
+  .swatch.red{ background:var(--red)}
+  .swatch.yellow{ background:var(--yellow)}
+  .swatch.blue{ background:var(--blue)}
+
+  .footer{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; color:var(--muted); font-size:13px}
+  .pill{ padding:8px 12px; border:1px solid var(--ring); border-radius:999px; background:#0b1220; color:#cbd5e1}
+  .actions{ display:flex; gap:10px; flex-wrap:wrap}
+  .action{ padding:10px 14px; border-radius:12px; border:1px solid var(--ring); background:#0b1220; color:#e5e7eb; cursor:pointer}
+  .action:hover{ background:#111827}
+
+  .result{ display:none; text-align:center; }
+  .result.show{ display:block }
+  .result-card{ background: radial-gradient(600px 250px at 50% -60px, rgba(255,255,255,.06), rgba(255,255,255,0)); border:1px solid #0b1220; border-radius:20px; padding:28px}
+  .type{ font-size:28px; margin:0 0 10px 0; display:flex; align-items:center; justify-content:center; gap:10px}
+  .desc{ color:#cbd5e1; margin:0; font-size:16px}
+  .grid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:14px; margin-top:16px}
+  .badge{ display:flex; align-items:center; gap:8px; background:#0b1220; border:1px solid #1f2937; padding:10px 12px; border-radius:12px; font-size:14px; color:#cbd5e1; justify-content:center}
+  .mini{ font-size:13px; color:#94a3b8}
+  .hidden{ display:none }
+
+  @media (max-width:600px){
+    .grid{ grid-template-columns:1fr }
+  }
+</style>
+</head>
+<body>
+  <main class="app" role="application" aria-label="من هو المعلم؟">
+    <header>
+      <h1><span class="emoji">🎮🤖</span> من هو المعلم؟ لعبة اكتشاف الشخصية بالذكاء الاصطناعي</h1>
+      <span class="tag">نسخة تفاعلية • بدون إنترنت</span>
+    </header>
+
+    <section class="container">
+      <div class="card">
+        <div class="progress" aria-hidden="true"><div id="bar"></div></div>
+        <p class="mini" id="counter">السؤال 1 من 10</p>
+        <h2 class="q" id="qText">...</h2>
+        <div class="answers" id="answers"></div>
+      </div>
+
+      <div class="footer">
+        <div class="actions">
+          <button class="action" id="restart" title="إعادة البدء">🔁 إعادة</button>
+          <button class="action" id="share" title="مشاركة النتيجة">🔗 مشاركة</button>
+          <button class="action" id="download" title="حفظ النتيجة كصورة">⬇️ حفظ النتيجة</button>
+        </div>
+        <span class="mini">الألوان: 🌿 داعم | 🔴 قائد | 🟡 مُلهم | 🔵 منظّم</span>
+      </div>
+
+      <div class="result" id="result">
+        <div class="result-card">
+          <h3 class="type" id="type"></h3>
+          <p class="desc" id="desc"></p>
+          <div class="grid" id="stats"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+<script>
+  // ===== المحتوى: 10 أسئلة =====
+  const QUESTIONS = [
+    {
+      q: "لما يكون في فوضى بالصف، شو أول رد فعلك؟",
+      options: [
+        {t:"أهدّئ الوضع وأسمع الجميع", k:"green", icon:"🌿"},
+        {t:"أرفع صوتي وأنظّم الأمور", k:"red", icon:"🔴"},
+        {t:"أمزح شوي لتخفيف التوتر", k:"yellow", icon:"🟡"},
+        {t:"أدوّن الملاحظات وأتابع بدقة", k:"blue", icon:"🔵"},
+      ]
+    },
+    {
+      q: "كيف توصف نفسك أثناء اجتماع الطاقم؟",
+      options: [
+        {t:"القائد اللي يوجّه الحوار", k:"red", icon:"🔴"},
+        {t:"المُلهم اللي يعطي أفكار جديدة", k:"yellow", icon:"🟡"},
+        {t:"المستمع اللي يخلق جو راحة", k:"green", icon:"🌿"},
+        {t:"المنظّم اللي يهتم بالتفاصيل", k:"blue", icon:"🔵"},
+      ]
+    },
+    {
+      q: "شو أكثر جملة بتقولها لطلابك؟",
+      options: [
+        {t:"خلينا نحكي بهدوء ونفهم بعض.", k:"green", icon:"🌿"},
+        {t:"يلا نعملها بطريقة جديدة وممتعة!", k:"yellow", icon:"🟡"},
+        {t:"خلينا ننجز بسرعة ونركّز.", k:"red", icon:"🔴"},
+        {t:"ممتاز، بس في ملاحظات صغيرة نطوّرها.", k:"blue", icon:"🔵"},
+      ]
+    },
+    {
+      q: "قدّيش بتحب التخطيط قبل الحصة؟",
+      options: [
+        {t:"قائمة مفصلة وخطة بديلة", k:"blue", icon:"🔵"},
+        {t:"خطوط عريضة وباقيها إبداع بالميدان", k:"yellow", icon:"🟡"},
+        {t:"حسب حاجة الطلاب لحظتها", k:"green", icon:"🌿"},
+        {t:"توقيت دقيق ومهام محددة", k:"red", icon:"🔴"},
+      ]
+    },
+    {
+      q: "طالب/ة رفض يشارك… شو بتعمل؟",
+      options: [
+        {t:"ببني علاقة وبعطيه أمان", k:"green", icon:"🌿"},
+        {t:"بحفّزه بتحدي واضح وقصير", k:"red", icon:"🔴"},
+        {t:"بحوّلها لنشاط ممتع وجماعي", k:"yellow", icon:"🟡"},
+        {t:"بحلّل السبب وبعدها بخطة دقيقة", k:"blue", icon:"🔵"},
+      ]
+    },
+    {
+      q: "في مشروع جماعي، دورك المفضل؟",
+      options: [
+        {t:"تنظيم المهام والجداول", k:"blue", icon:"🔵"},
+        {t:"قيادة الفريق نحو الهدف", k:"red", icon:"🔴"},
+        {t:"رفع المعنويات وإشعال الحماس", k:"yellow", icon:"🟡"},
+        {t:"دعم الأفراد وإنصاتهم لبعض", k:"green", icon:"🌿"},
+      ]
+    },
+    {
+      q: "كيف تتعامل مع خطأك أمام الطلاب؟",
+      options: [
+        {t:"باعترف وبحوّله لتعلّم مشترك", k:"green", icon:"🌿"},
+        {t:"بصححه بسرعة وبكمل", k:"red", icon:"🔴"},
+        {t:"بمزح لتخفيف الجو ثم أشرح", k:"yellow", icon:"🟡"},
+        {t:"بفحص السبب وأضع إجراء وقائي", k:"blue", icon:"🔵"},
+      ]
+    },
+    {
+      q: "أي بيئة صفية تفضّل؟",
+      options: [
+        {t:"قواعد واضحة ومتابعة صارمة", k:"red", icon:"🔴"},
+        {t:"مساحة آمنة وداعمة للجميع", k:"green", icon:"🌿"},
+        {t:"زوايا تجريب وابتكار", k:"yellow", icon:"🟡"},
+        {t:"تنظيم بصري ولوحات تقدّم", k:"blue", icon:"🔵"},
+      ]
+    },
+    {
+      q: "كيف تقيس التقدّم؟",
+      options: [
+        {t:"روبركات ومعايير دقيقة", k:"blue", icon:"🔵"},
+        {t:"إنجاز المهام على الوقت", k:"red", icon:"🔴"},
+        {t:"مؤشرات اجتماعية وشعورية", k:"green", icon:"🌿"},
+        {t:"ملفات إنجاز وإبداعات", k:"yellow", icon:"🟡"},
+      ]
+    },
+    {
+      q: "أفضل لحظة لك خلال الأسبوع؟",
+      options: [
+        {t:"لما أحس الكل مطمئن ومسموع", k:"green", icon:"🌿"},
+        {t:"لما ننجز هدف صعب", k:"red", icon:"🔴"},
+        {t:"لما نجرّب فكرة مجنونة وتنجح", k:"yellow", icon:"🟡"},
+        {t:"لما تكون الأمور واضحة ومنظّمة", k:"blue", icon:"🔵"},
+      ]
+    },
+  ];
+
+  const TYPES = {
+    green: {
+      title: "🌿 المعلم الأخضر – الداعم",
+      desc: "حساس، مُستمع، يبني الثقة ويهتم بالمناخ العاطفي للصف."
+    },
+    red: {
+      title: "🔴 المعلم الأحمر – القائد",
+      desc: "حازم، منجِز، يحدّد الاتجاه ويحفّز الفريق نحو الأهداف."
+    },
+    yellow: {
+      title: "🟡 المعلم الأصفر – المُلهِم",
+      desc: "مبدع، متفائل، ينشر الطاقة ويحوّل التعلم إلى تجربة ممتعة."
+    },
+    blue: {
+      title: "🔵 المعلم الأزرق – المنظّم",
+      desc: "دقيق، منطقي، يفضّل النظام والوضوح ومتابعة التفاصيل."
+    }
+  };
+
+  const state = {
+    i: 0,
+    score: {green:0, red:0, yellow:0, blue:0},
+    history: []
+  };
+
+  const qText = document.getElementById('qText');
+  const answers = document.getElementById('answers');
+  const bar = document.getElementById('bar');
+  const counter = document.getElementById('counter');
+  const result = document.getElementById('result');
+  const typeEl = document.getElementById('type');
+  const descEl = document.getElementById('desc');
+  const stats = document.getElementById('stats');
+  const btnRestart = document.getElementById('restart');
+  const btnShare = document.getElementById('share');
+  const btnDownload = document.getElementById('download');
+
+  function renderQuestion(){
+    const total = QUESTIONS.length;
+    if(state.i >= total){ return showResult(); }
+    const {q, options} = QUESTIONS[state.i];
+    qText.textContent = q;
+    counter.textContent = `السؤال ${state.i+1} من ${total}`;
+    bar.style.width = ((state.i)/total*100) + '%';
+
+    answers.innerHTML = '';
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'btn';
+      btn.innerHTML = `<span class="swatch ${opt.k === 'green'?'green':opt.k === 'red'?'red':opt.k === 'yellow'?'yellow':'blue'}"></span>
+                       <span>${opt.icon} ${opt.t}</span>`;
+      btn.addEventListener('click', () => choose(opt.k));
+      answers.appendChild(btn);
+    });
+  }
+
+  function choose(key){
+    state.score[key]++;
+    state.history.push(key);
+    state.i++;
+    if(state.i >= QUESTIONS.length){
+      bar.style.width = '100%';
+      showResult();
+    }else{
+      renderQuestion();
+    }
+  }
+
+  function showResult(){
+    // حدد الأعلى، وعالج التعادل بالترجيح وفق آخر إجابة
+    const entries = Object.entries(state.score).sort((a,b)=>b[1]-a[1]);
+    let [topKey, topVal] = entries[0];
+    const secondVal = entries[1][1];
+    if(topVal === secondVal){
+      // كسر تعادل: نعطي أولوية لآخر خيارين اختارهما المستخدم
+      for(let j=state.history.length-1; j>=0; j--){
+        const k = state.history[j];
+        if(state.score[k] === topVal){ topKey = k; break; }
+      }
+    }
+
+    const t = TYPES[topKey];
+    typeEl.textContent = t.title;
+    descEl.textContent = t.desc;
+
+    // إحصاءات
+    stats.innerHTML = '';
+    const total = QUESTIONS.length;
+    for(const k of ['green','red','yellow','blue']){
+      const pct = Math.round(state.score[k]/total*100);
+      const label = TYPES[k].title.split(' – ')[0]; // الرمز + الاسم المختصر
+      const div = document.createElement('div');
+      div.className = 'badge';
+      div.innerHTML = `<span class="swatch ${k==='green'?'green':k==='red'?'red':k==='yellow'?'yellow':'blue'}"></span>
+                       <strong>${label}</strong>
+                       <span>• ${pct}% (${state.score[k]} / ${total})</span>`;
+      stats.appendChild(div);
+    }
+
+    result.classList.add('show');
+    document.querySelector('.card').classList.add('hidden');
+  }
+
+  function restart(){
+    state.i = 0;
+    state.score = {green:0, red:0, yellow:0, blue:0};
+    state.history = [];
+    result.classList.remove('show');
+    document.querySelector('.card').classList.remove('hidden');
+    bar.style.width = '0%';
+    renderQuestion();
+  }
+
+  async function share(){
+    const totals = state.score;
+    const text = `نتيجتي في "من هو المعلم؟": ${TYPES[getTop()].title} — جرّبها أنت أيضًا!`;
+    const url = location.href;
+    try{
+      await navigator.share({title: document.title, text, url});
+    }catch(e){
+      navigator.clipboard.writeText(url).then(()=>{
+        alert("تم نسخ رابط الصفحة! يمكنك لصقه في أي مكان.");
+      }).catch(()=>{
+        alert("انسخي الرابط من شريط العنوان لمشاركته.");
+      });
+    }
+  }
+
+  function getTop(){
+    const entries = Object.entries(state.score).sort((a,b)=>b[1]-a[1]);
+    return entries[0][0];
+  }
+
+  // حفظ كصورة (لقطة شاشة للقسم الظاهر)
+  async function downloadImage(){
+    // نستخدم CSS print و window.print كخيار بسيط وعمومي
+    const prevTitle = document.title;
+    document.title = "نتيجة-لعبة-من-هو-المعلم";
+    const ok = confirm("سيتم فتح نافذة طباعة. اختاري \"حفظ كملف PDF\" لحفظ النتيجة.");
+    if(ok){ window.print(); }
+    document.title = prevTitle;
+  }
+
+  btnRestart.addEventListener('click', restart);
+  btnShare.addEventListener('click', share);
+  btnDownload.addEventListener('click', downloadImage);
+
+  // بدء
+  renderQuestion();
+
+  // تحسينات وصول
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' && document.activeElement.classList.contains('btn')){
+      document.activeElement.click();
+    }
+  });
+</script>
+</body>
+</html>
